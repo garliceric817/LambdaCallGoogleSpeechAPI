@@ -47,8 +47,87 @@ pip install Pillow boto3
 * 申請Google Speech-to-text Service account
 進入GCP帳號--> 建立一個project --> 進入speech-to-text console --> 選擇建立憑證 (角色記得選擇project的擁有者)
 ![](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/image1.png)   
-* 選擇新建立的憑證-->產生金鑰JSON，並存於本機
-![](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/image2.png)  
+* 選擇新建立的憑證-->產生金鑰JSON，並存於本機，這階段就算完成
+![](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/Image2.png) 
+* Lambda Function code ，建立一個檔案"lambda_function.py"
+```
+cd my-project/venv/lib/python3.7
+vim lambda_function.py
+```
+* 貼上下面之程式碼並儲存，值得注意的是google的環境變數 "GOOGLE_APPLICATION_CREDENTIALS"＝ Google JSON金鑰的路徑，本機的話好解決，
+但在lambda終會有點讓人不知所措，我是在後續直接將JSON金鑰放置在cd my-project/venv/lib/python3.7/site-packages/裡，結果也表示可以
+抓的到
+```
+import boto3
+import os
+import sys
+import uuid
+from urllib.parse import unquote_plus
+from PIL import Image
+import PIL.Image
+
+s3_client = boto3.client('s3')
+
+os.environ["GOOGLE_APPLICATION_CREDENTIALS"]="my-project-final-1582980663902-a9536d561e3e.json"
+
+def transcribe_file(speech_file, text_file):
+    """Transcribe the given audio file asynchronously."""
+    import io
+    import os
+    from google.cloud import speech
+    from google.cloud.speech import enums
+    from google.cloud.speech import types
+    client = speech.SpeechClient()
+
+    with io.open(speech_file, 'rb') as audio_file:
+        content = audio_file.read()
+
+    audio = types.RecognitionAudio(content=content)
+    config = types.RecognitionConfig(
+        encoding=enums.RecognitionConfig.AudioEncoding.FLAC,
+        sample_rate_hertz=48000,
+        language_code='cmn-Hant-TW')
+
+    operation = client.long_running_recognize(config, audio)
+
+    print('Waiting for operation to complete...')
+    response = operation.result(timeout=90)
+
+    # Each result is for a consecutive portion of the audio. Iterate through
+    # them to get the transcripts for the entire audio file.
+    for result in response.results:
+        # The first alternative is the most likely one for this portion.
+        print(u'Transcript: {}'.format(result.alternatives[0].transcript))
+        print('Confidence: {}'.format(result.alternatives[0].confidence))
+        with io.open(text_file, "w") as f:
+            f.write(u'Transcript: {}'.format(result.alternatives[0].transcript))
+
+
+def lambda_handler(event, context):
+    for record in event['Records']:
+        bucket = record['s3']['bucket']['name']
+        key = unquote_plus(record['s3']['object']['key'])
+        tmpkey = key.replace('/', '')
+        download_path = '/tmp/{}{}'.format(uuid.uuid4(), tmpkey)
+        upload_path = '/tmp/resized-{}'.format(tmpkey)
+        s3_client.download_file(bucket, key, download_path)
+        transcribe_file(download_path, upload_path)
+        s3_client.upload_file(upload_path, '{}-resized'.format(bucket), text.txt)
+```
+* 接下來就可以來打包環境跟lambda主程式，最後應該要看到三個檔案如下圖
+```
+cd $VIRTUAL_ENV/lib/python3.7/site-packages
+zip -r9 ${OLDPWD}/function.zip .
+cd ${OLDPWD}
+zip -g function.zip lambda_function.py ##把lambda主程式加入環境壓縮檔中
+deactivate ##退出虛擬環境
+```
+![](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/Image3.png) 
+
+* 接下來我們要將 "function.zip"上傳至S3的bucket中 (隨便一個，只是要當Lambda的匯入源)，S3 CLI uplaod file 範例如下
+```
+aws s3 cp function.zip s3://my-bucket/
+```
 
 
 reference[1]: https://docs.aws.amazon.com/zh_tw/lambda/latest/dg/with-s3-example-deployment-pkg.html<br>
