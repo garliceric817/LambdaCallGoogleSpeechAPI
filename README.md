@@ -10,12 +10,12 @@ Step by step: How to use Lambda to call Google Speech-to-text API<br>
 個部分是使用google speech-to-text API 範例，連結如 “reference[2] Speech-to-Text Client Libraries"，其他相關的環境設定請參考 
 “reference[3] Setting up a Python development environment"
 
-### 步驟一
+### 步驟ㄧ 虛擬環境準備
 Lamdba的虛擬環境準備我們會需要launch一台EC2(w/i Amazon Linux AMI)來準備，原因是lambda上的一些相依性在其他作業系統上可能會有相容性的問題，
 例如我第一次是將lambda package佈建在我的MAC上，結果在出現以下error -->(ImportError: cannot import name '_imaging' from 'PIL'),
 但這問題使用了AWS EC2 Amazon Linux image就獲得改善。
 * launch EC2 with Amazon Linux image
-* 進入EC2環境進行環境佈建
+* 進入EC2環境進行python & venv & PIP 基本元件安裝
 ```
 sudo yum update
 sudo yum install python3 python3-dev python3-venv
@@ -24,10 +24,35 @@ sudo yum install python3 python3-dev python3-venv
 wget https://bootstrap.pypa.io/get-pip.py
 sudo python3 get-pip.py
 ```
+* 建立虛擬環境
+```
+cd /home/ec2-user
+mkdir my-project
+cd my-project
+python3 -m venv venv
+source venv/bin/activate
+```
+* 安裝Google相關packages
+```
+pip install google-cloud-storage
+pip install --upgrade google-cloud-speech
+```
 
-    
-reference[1]: https://docs.aws.amazon.com/zh_tw/lambda/latest/dg/with-s3-example-deployment-pkg.html
-reference[2]: https://cloud.google.com/speech-to-text/docs/libraries#client-libraries-install-python
+* 安裝AWS相關packages
+```
+pip install Pillow boto3
+```
+### 步驟二 Google API service account(key)申請 以及撰寫lambda主程式
+虛擬環境準備到一段落，接下來我們要申請Google Speech-to-text service account(key or credential)與開始撰寫lambda的主程式
+* 申請Google Speech-to-text Service account
+進入GCP帳號--> 建立一個project --> 進入speech-to-text console --> 選擇建立憑證 (角色記得選擇project的擁有者)
+![](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/image1.png)   
+* 選擇新建立的憑證-->產生金鑰JSON，並存於本機
+![](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/image2.png)  
+
+
+reference[1]: https://docs.aws.amazon.com/zh_tw/lambda/latest/dg/with-s3-example-deployment-pkg.html<br>
+reference[2]: https://cloud.google.com/speech-to-text/docs/libraries#client-libraries-install-python<br>
 reference[3]: https://cloud.google.com/python/setup#linux
     
     
