@@ -17,10 +17,14 @@ Lamdba的虛擬環境準備我們會需要launch一台EC2(w/i Amazon Linux AMI)�
 * launch EC2 with Amazon Linux image
 * 進入EC2環境進行環境佈建
 ```
+sudo yum update
 sudo yum install python3 python3-dev python3-venv
-    
-    
-    
+```
+```
+wget https://bootstrap.pypa.io/get-pip.py
+sudo python3 get-pip.py
+```
+
     
 reference[1]: https://docs.aws.amazon.com/zh_tw/lambda/latest/dg/with-s3-example-deployment-pkg.html
 reference[2]: https://cloud.google.com/speech-to-text/docs/libraries#client-libraries-install-python
