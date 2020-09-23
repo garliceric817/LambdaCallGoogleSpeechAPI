@@ -132,7 +132,8 @@ aws s3 cp function.zip s3://my-bucket/
 
 reference[1]: https://docs.aws.amazon.com/zh_tw/lambda/latest/dg/with-s3-example-deployment-pkg.html<br>
 reference[2]: https://cloud.google.com/speech-to-text/docs/libraries#client-libraries-install-python<br>
-reference[3]: https://cloud.google.com/python/setup#linux
+reference[3]: https://cloud.google.com/python/setup#linux<br>
+reference[4]類似範例:https://medium.com/@talktopoorni/invoking-google-cloud-platform-gcp-api-from-aws-lambda-417547cf3f3e
     
     
     
