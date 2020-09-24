@@ -114,6 +114,48 @@ def lambda_handler(event, context):
         transcribe_file(download_path, upload_path)
         s3_client.upload_file(upload_path, '{}-resized'.format(bucket), text.txt)
 ```
+* 這邊要特別注意的是S3 Event Triiger 所發出的JSON檔案格式，以及範例碼萃取個items的方式
+```
+{
+  "Records":[
+    {
+      "eventVersion":"2.0",
+      "eventSource":"aws:s3",
+      "awsRegion":"us-west-2",
+      "eventTime":"1970-01-01T00:00:00.000Z",
+      "eventName":"ObjectCreated:Put",
+      "userIdentity":{
+        "principalId":"AIDAJDPLRKLG7UEXAMPLE"
+      },
+      "requestParameters":{
+        "sourceIPAddress":"127.0.0.1"
+      },
+      "responseElements":{
+        "x-amz-request-id":"C3D13FE58DE4C810",
+        "x-amz-id-2":"FMyUVURIY8/IgAtTv8xRjskZQpcIZ9KG4V5Wp6S7S/JRWeUWerMUE5JgHvANOjpD"
+      },
+      "s3":{
+        "s3SchemaVersion":"1.0",
+        "configurationId":"testConfigRule",
+        "bucket":{
+          "name":"sourcebucket",
+          "ownerIdentity":{
+            "principalId":"A3NL1KOZZKExample"
+          },
+          "arn":"arn:aws:s3:::sourcebucket"
+        },
+        "object":{
+          "key":"HappyFace.jpg",
+          "size":1024,
+          "eTag":"d41d8cd98f00b204e9800998ecf8427e",
+          "versionId":"096fKKXTRTtl3on89fVO.nfljtsv6qko"
+        }
+      }
+    }
+  ]
+}
+
+```
 * 接下來就可以來打包環境跟lambda主程式，最後應該要看到三個檔案如下圖
 ```
 cd $VIRTUAL_ENV/lib/python3.7/site-packages
@@ -128,7 +170,23 @@ deactivate ##退出虛擬環境
 ```
 aws s3 cp function.zip s3://my-bucket/
 ```
+這邊EC2的權限設定要注意，我一開始使用EC2toS3FullAccess Role也無法成功upload，最後還是用埋access key到EC2才成功，要注意一下。
 
+* 創建Lambda，進入Lamnbda console，選定function code source為S3 bucket，最後貼上function.py 在S3的URL就完成了
+* 在lambda創建完畢後，在lambda console designer頁面加上S3 bucket trigger，設定資訊如下圖
+![](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/Image4.png) 
+
+* 最後再lambda這邊要注意的是allocate的memory and 執行時間，畢竟audio檔是要先存到memory中，若調整得不夠大，那lambda執行事會發生錯誤。
+lambda的執行角色也要給對應的權限（非常重要，給不對連cloudWatch的log也不會出來）
+* 最後就可以上傳範例的音檔至source-bucket中，並在source-bucket-resized bucket中得到名為text.txt
+* 若結果沒有跑出，可以去Lambda console中的"Monitor", 中的“View Log in CloudWatch" 即可知道程式的是哪一部有問題。CloudWatch 在程式執
+行成功以及失敗的畫面如下
+![失敗](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/Image6.png)
+![成功](https://github.com/garliceric817/LambdaCallGoogleSpeechAPI/raw/master/Images/Image7.png) 
+
+### 結論
+大概就這樣啦。不過實測後發現這套解法再將音訊檔轉成文字檔時效果並不好，且Google API對音源有很多限制如檔案大寫必須小於10MB（大約一分鐘的影片長度）
+，檔案格式我寫死只讀flac，這些都是可以再修改的部分。
 
 reference[1]: https://docs.aws.amazon.com/zh_tw/lambda/latest/dg/with-s3-example-deployment-pkg.html<br>
 reference[2]: https://cloud.google.com/speech-to-text/docs/libraries#client-libraries-install-python<br>
