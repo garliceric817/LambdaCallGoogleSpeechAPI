@@ -17,7 +17,7 @@ Lamdba的虛擬環境準備我們會需要launch一台EC2(w/i Amazon Linux AMI)�
 * launch EC2 with Amazon Linux image
 * 進入EC2環境進行python & venv & PIP 基本元件安裝
 ```
-sudo yum update
+sudo yum update -y
 sudo yum install python3 python3-dev python3-venv
 ```
 ```
